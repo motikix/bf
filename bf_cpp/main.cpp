@@ -7,7 +7,7 @@
 
 using namespace std;
 
-constexpr int MEMORY_SIZE = 255;
+constexpr int MEMORY_SIZE = 1024;
 
 // 命令をコンパイル時定数として定義
 constexpr char INCREMENT = '+';
