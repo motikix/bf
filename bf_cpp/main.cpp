@@ -2,8 +2,11 @@
 #include <fstream>
 #include <sstream>
 #include <string.h>
+#include <cstdio>
 
 using namespace std;
+
+constexpr int MEMORY_SIZE = 255;
 
 // 命令をコンパイル時定数として定義
 constexpr char INCREMENT = '+';
@@ -34,7 +37,7 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  unsigned char memory[255-1];  // 1Byte=8Bit (0-255) で構成されるメモリを定義
+  unsigned char memory[MEMORY_SIZE];  // 1Byte=8Bit (0-255) で構成されるメモリを定義
   unsigned int ptr = 0;         // メモリポインタ (負の値は取らないので unsigned)
   unsigned int code_ptr = 0;    // Brainfuck コードのポインタ
   unsigned int code_len = 0;    // Brainfuck コードの終端 (長さ)
@@ -54,20 +57,26 @@ int main(int argc, char* argv[]) {
   while (code_ptr < code_len) {
     switch (code[code_ptr]) {
       case INCREMENT:
+        memory[ptr]++;
         break;
       case DECREMENT:
+        memory[ptr]--;
         break;
       case RIGHT:
+        ptr = (ptr >= MEMORY_SIZE-1) ? 0 : ptr+1;
         break;
       case LEFT:
+        ptr = (ptr <= 0) ? MEMORY_SIZE-1 : ptr-1;
         break;
       case LOOP_START:
         break;
       case LOOP_END:
         break;
       case OUTPUT:
+        putchar(memory[ptr]);
         break;
       case INPUT:
+        memory[ptr] = getchar();
         break;
       default:
         // 上記以外はコメント扱い
