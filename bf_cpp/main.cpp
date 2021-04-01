@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string.h>
 #include <cstdio>
+#include <stack>
 
 using namespace std;
 
@@ -37,10 +38,12 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  unsigned char memory[MEMORY_SIZE];  // 1Byte=8Bit (0-255) で構成されるメモリを定義
-  unsigned int ptr = 0;         // メモリポインタ (負の値は取らないので unsigned)
-  unsigned int code_ptr = 0;    // Brainfuck コードのポインタ
-  unsigned int code_len = 0;    // Brainfuck コードの終端 (長さ)
+  unsigned char memory[MEMORY_SIZE];    // 1Byte=8Bit (0-255) で構成されるメモリを定義
+  unsigned int ptr = 0;                 // メモリポインタ (負の値は取らないので unsigned)
+  unsigned int code_ptr = 0;            // Brainfuck コードのポインタ
+  unsigned int code_len = 0;            // Brainfuck コードの終端 (長さ)
+
+  stack<int> loops;                     // ループのネスト用スタック: "[" のコードポインタが格納される
 
   // メモリの初期化
   memset(memory, 0, sizeof(memory));
@@ -69,8 +72,38 @@ int main(int argc, char* argv[]) {
         ptr = (ptr <= 0) ? MEMORY_SIZE-1 : ptr-1;
         break;
       case LOOP_START:
+        loops.push(code_ptr);
+
+        // ポインタの値が 0 ならば "]" に飛ぶ
+        if (memory[ptr] == 0) {
+          int depth = 1;  // ループの深さ
+
+          while (depth > 0) {
+            code_ptr++; // コードポインタを進める
+
+            // もしコード終端に来てしまったらエラー
+            if (code_ptr >= code_len) {
+              cerr << "Error: Cannot find \"]\"." << endl;
+              return -1;
+            }
+
+            // "[" と "]" を見つけたら深さを修正
+            if (code[code_ptr] == LOOP_START)
+              depth++;
+            if (code[code_ptr] == LOOP_END)
+              depth--;
+          } // もし depth=0 であれば、対応する "]" が見つかったので抜ける
+
+          loops.pop();
+        }
         break;
       case LOOP_END:
+        if (loops.empty()) {
+          cerr << "Error: Loop start order, " << LOOP_START << ", is nod found." << endl;
+          return -1;
+        }
+        code_ptr = loops.top() - 1;   // 対応する "[" に移動
+        loops.pop();                  // 飛んだらまたスタックされるのでポップしておく
         break;
       case OUTPUT:
         putchar(memory[ptr]);
